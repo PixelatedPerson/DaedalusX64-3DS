@@ -162,7 +162,11 @@ static void WatchdogStart()
 	svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
 	// Higher priority (lower number) than the emulator thread so it still
 	// runs if the CPU core is stuck in a tight loop.
-	sWatchdogThread = threadCreate(WatchdogFunc, nullptr, 0x4000, prio > 0x19 ? prio - 1 : 0x18, -2, false);
+	s32 wprio = prio > 0x19 ? prio - 1 : 0x18;
+	sWatchdogThread = threadCreate(WatchdogFunc, nullptr, 0x4000, wprio, -2, false);
+	if (!sWatchdogThread) // try the New 3DS extra core
+		sWatchdogThread = threadCreate(WatchdogFunc, nullptr, 0x4000, wprio, 2, false);
+	CtrLog("watchdog thread: %s (main prio 0x%lx, wd prio 0x%lx)", sWatchdogThread ? "started" : "FAILED", prio, wprio);
 }
 
 static void WatchdogStop()
@@ -193,6 +197,12 @@ int main(int argc, char* argv[])
 		{
 			FILE *f = fopen(DAEDALUS_CTR_PATH("nodynarec.txt"), "r");
 			if (f) { fclose(f); gDynarecEnabled = false; CPU_SelectCore(); CtrLog("nodynarec.txt found: forcing interpreter"); }
+		}
+		{
+			extern bool gCtrForceSyncAudio;
+			FILE *f = fopen(DAEDALUS_CTR_PATH("syncaudio.txt"), "r");
+			gCtrForceSyncAudio = (f != NULL);
+			if (f) { fclose(f); CtrLog("syncaudio.txt found: audio processed synchronously"); }
 		}
 		CtrLog("CPU_Run start (dynarec=%d)", (int)gDynarecEnabled);
 		WatchdogStart();

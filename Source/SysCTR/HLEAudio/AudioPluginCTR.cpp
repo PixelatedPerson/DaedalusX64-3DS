@@ -25,6 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //
 
 #include "stdafx.h"
+bool gCtrForceSyncAudio = false;
 
 #include <3ds.h>
 
@@ -186,7 +187,7 @@ EProcessResult	CAudioPluginCTR::ProcessAList()
 			result = PR_COMPLETED;
 			break;
 		case APM_ENABLED_ASYNC:
-			if(isN3DS) {
+			if(isN3DS && !gCtrForceSyncAudio) {
 				svcSignalEvent(audioRequest);
 
 				CPU_AddEvent(RSP_AUDIO_INTR_CYCLES, CPU_EVENT_AUDIO);

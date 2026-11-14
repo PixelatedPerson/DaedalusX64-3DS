@@ -18,6 +18,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "stdafx.h"
+#ifdef DAEDALUS_CTR
+#include "SysCTR/Utility/LogCTR.h"
+#endif
 
 #include "RSP_HLE.h"
 
@@ -302,6 +305,18 @@ void RSP_HLE_ProcessTask()
 		return;
 	}
 
+#ifdef DAEDALUS_CTR
+	{
+		static u32 sTaskN = 0;
+		sTaskN++;
+		u32 t = pTask->t.type;
+		bool known = (t == M_GFXTASK || t == M_AUDTASK || t == M_JPGTASK);
+		if (sTaskN <= 40 || !known || (sTaskN % 500) == 0)
+			CtrLog("RSP task #%u type=%u ucode=0x%08x data=0x%08x size=0x%x%s", (unsigned)sTaskN, (unsigned)t,
+				(unsigned)(uintptr_t)pTask->t.ucode, (unsigned)(uintptr_t)pTask->t.data_ptr, (unsigned)pTask->t.data_size,
+				known ? "" : "  <-- UNHANDLED (game will wait forever)");
+	}
+#endif
 	switch ( pTask->t.type )
 	{
 		case M_GFXTASK:

@@ -21,6 +21,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "SysCTR/Utility/LogCTR.h"
 #include "Core/CPU.h"
 #include "Core/Memory.h"
+#include "SysCTR/UI/InGameMenu.h"
+#include <GL/picaGL.h>
+#include <3ds.h>
+extern void HandleEndOfFrame();
 u32 sDListCount = 0;
 u32 sVICount = 0;
 
@@ -201,6 +205,33 @@ void CGraphicsPluginImpl::UpdateScreen()
 			(unsigned)sVICount, (unsigned)sDListCount, (unsigned)current_origin,
 			(unsigned)Memory_VI_GetRegister(VI_WIDTH_REG), (unsigned)Memory_VI_GetRegister(VI_STATUS_REG),
 			(unsigned)gCPUState.CurrentPC);
+	// Stall handling: if the game hasn't sent a display list or flipped the
+	// framebuffer for a while, still service the menu and HOME button so
+	// a hung game can be closed instead of requiring a console reboot.
+	{
+		static u32 sLastDLists = 0;
+		static u32 sStallVIs = 0;
+		static bool sStallLogged = false;
+		if (sDListCount == sLastDLists && current_origin == LastOrigin)
+		{
+			if (++sStallVIs >= 30)
+			{
+				if (!sStallLogged) { sStallLogged = true; CtrLog("Stall: no new frames for 30 VIs (PC=0x%08x)", (unsigned)gCPUState.CurrentPC); }
+				sStallVIs = 1;
+				UI::DrawInGameMenu();
+				pglSwapBuffers();
+				HandleEndOfFrame();
+				svcSleepThread(16000000LL); // ~1 frame, stop racing through VIs
+			}
+		}
+		else
+		{
+			if (sStallLogged) CtrLog("Stall ended");
+			sStallLogged = false;
+			sStallVIs = 0;
+			sLastDLists = sDListCount;
+		}
+	}
 	static bool Old_FrameskipActive = false;
 	static bool Older_FrameskipActive = false;
 	
