@@ -9,6 +9,7 @@
 #include "Config/ConfigOptions.h"
 #include "Core/Cheats.h"
 #include "Core/CPU.h"
+#include "OSHLE/ultra_R4300.h"
 #include "Core/CPU.h"
 #include "Core/Memory.h"
 #include "Core/PIF.h"
@@ -130,6 +131,50 @@ void HandleEndOfFrame()
 }
 
 extern u32 __ctru_heap_size;
+extern u32 sDListCount;
+extern u32 sVICount;
+
+// Watchdog: logs where the emulated CPU is once per second, so a hang
+// shows up in log.txt as the same PC/Count repeating.
+static volatile bool sWatchdogRun = false;
+static Thread sWatchdogThread = nullptr;
+
+static void WatchdogFunc(void *)
+{
+	u32 tick = 0;
+	while (sWatchdogRun)
+	{
+		svcSleepThread(1000000000LL); // 1 second (nanoseconds)
+		if (!sWatchdogRun) break;
+		tick++;
+		CtrLog("WD %us: PC=0x%08x Count=0x%08x Delay=%u Jobs=0x%x VIs=%u DLists=%u dynarec=%d",
+			(unsigned)tick, (unsigned)gCPUState.CurrentPC,
+			(unsigned)gCPUState.CPUControl[C0_COUNT]._u32,
+			(unsigned)gCPUState.Delay, (unsigned)gCPUState.StuffToDo,
+			(unsigned)sVICount, (unsigned)sDListCount, (int)gDynarecEnabled);
+	}
+}
+
+static void WatchdogStart()
+{
+	sWatchdogRun = true;
+	s32 prio = 0x30;
+	svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
+	// Higher priority (lower number) than the emulator thread so it still
+	// runs if the CPU core is stuck in a tight loop.
+	sWatchdogThread = threadCreate(WatchdogFunc, nullptr, 0x4000, prio > 0x19 ? prio - 1 : 0x18, -2, false);
+}
+
+static void WatchdogStop()
+{
+	sWatchdogRun = false;
+	if (sWatchdogThread)
+	{
+		threadJoin(sWatchdogThread, 2000000000LL);
+		threadFree(sWatchdogThread);
+		sWatchdogThread = nullptr;
+	}
+}
 
 int main(int argc, char* argv[])
 {
@@ -145,8 +190,14 @@ int main(int argc, char* argv[])
 		CtrLog("Opening ROM: %s", fullpath);
 		bool opened = System_Open(fullpath);
 		CtrLog("System_Open returned %d (dynarec=%d)", (int)opened, (int)gDynarecEnabled);
-		CtrLog("CPU_Run start");
+		{
+			FILE *f = fopen(DAEDALUS_CTR_PATH("nodynarec.txt"), "r");
+			if (f) { fclose(f); gDynarecEnabled = false; CPU_SelectCore(); CtrLog("nodynarec.txt found: forcing interpreter"); }
+		}
+		CtrLog("CPU_Run start (dynarec=%d)", (int)gDynarecEnabled);
+		WatchdogStart();
 		CPU_Run();
+		WatchdogStop();
 		CtrLog("CPU_Run returned, closing");
 		System_Close();
 		CtrLog("System_Close done");

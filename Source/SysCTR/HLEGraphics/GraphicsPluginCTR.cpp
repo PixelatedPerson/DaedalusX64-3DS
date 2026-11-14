@@ -21,8 +21,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "SysCTR/Utility/LogCTR.h"
 #include "Core/CPU.h"
 #include "Core/Memory.h"
-static u32 sDListCount = 0;
-static u32 sVICount = 0;
+u32 sDListCount = 0;
+u32 sVICount = 0;
 
 #include <cstdio>
 
