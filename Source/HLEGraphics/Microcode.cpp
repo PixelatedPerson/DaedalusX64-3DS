@@ -17,6 +17,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 #include "stdafx.h"
+#ifdef DAEDALUS_CTR
+#include "SysCTR/Utility/LogCTR.h"
+#endif
 #include "HLEGraphics/Microcode.h"
 
 #include "Core/ROM.h"
@@ -209,6 +212,9 @@ UcodeInfo GBIMicrocode_DetectVersion( u32 code_base, u32 code_size, u32 data_bas
 			u32 ucode_offset = gMicrocodeData[i].offset;
 
 			GBIMicrocode_SetCustomArray( ucode_version, ucode_offset ); 
+#ifdef DAEDALUS_CTR
+			CtrLog("Ucode (custom): ver=%u hash=0x%08x name=\"%s\"", (unsigned)ucode_version, (unsigned)code_hash, gMicrocodeData[i].ucode_name);
+#endif
 			DBGConsole_Msg(0, "Detected Custom Ucode is: [M Ucode %d, 0x%08x, \"%s\", \"%s\"]", ucode_version, code_hash, 
 				gMicrocodeData[i].ucode_name, g_ROM.settings.GameName.c_str());
 			return GBIMicrocode_SetCache( index, code_base, data_base, gCustomInstruction, gCustomInstructionName );
@@ -257,6 +263,9 @@ UcodeInfo GBIMicrocode_DetectVersion( u32 code_base, u32 code_size, u32 data_bas
 			}
 		}
 	}
+#ifdef DAEDALUS_CTR
+	CtrLog("Ucode: ver=%u hash=0x%08x string=\"%s\"", (unsigned)ucode_version, (unsigned)code_hash, str);
+#endif
 	DBGConsole_Msg(0, "Detected Ucode is: [M Ucode %d, 0x%08x, \"%s\", \"%s\"]", ucode_version, code_hash, 
 		str, g_ROM.settings.GameName.c_str());
 	return GBIMicrocode_SetCache(index, code_base, data_base, gNormalInstruction[ ucode_version ], gNormalInstructionName[ ucode_version ]);

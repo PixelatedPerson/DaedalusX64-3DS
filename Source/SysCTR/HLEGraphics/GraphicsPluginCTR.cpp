@@ -18,6 +18,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "stdafx.h"
+#include "SysCTR/Utility/LogCTR.h"
+#include "Core/CPU.h"
+#include "Core/Memory.h"
+static u32 sDListCount = 0;
+static u32 sVICount = 0;
 
 #include <cstdio>
 
@@ -145,6 +150,8 @@ CGraphicsPluginImpl::~CGraphicsPluginImpl()
 
 bool CGraphicsPluginImpl::Initialise()
 {
+	sDListCount = 0;
+	sVICount = 0;
 	if(!CreateRenderer())
 	{
 		return false;
@@ -165,6 +172,9 @@ bool CGraphicsPluginImpl::Initialise()
 
 void CGraphicsPluginImpl::ProcessDList()
 {
+	sDListCount++;
+	bool trace = sDListCount <= 20;
+	if (trace) CtrLog("DList #%u start (PC=0x%08x)", (unsigned)sDListCount, (unsigned)gCPUState.CurrentPC);
 #ifdef DAEDALUS_DEBUG_DISPLAYLIST
 	if (!DLDebugger_Process())
 	{
@@ -173,6 +183,7 @@ void CGraphicsPluginImpl::ProcessDList()
 #else
 	DLParser_Process();
 #endif
+	if (trace) CtrLog("DList #%u done", (unsigned)sDListCount);
 }
 
 #ifdef DAEDALUS_DEBUG_DISPLAYLIST
@@ -184,6 +195,12 @@ extern u32 gNumRectsClipped;
 void CGraphicsPluginImpl::UpdateScreen()
 {
 	u32 current_origin = Memory_VI_GetRegister(VI_ORIGIN_REG);
+	sVICount++;
+	if (sVICount <= 5 || (sVICount % 60) == 0)
+		CtrLog("VI #%u: dlists=%u origin=0x%08x width=%u status=0x%x PC=0x%08x",
+			(unsigned)sVICount, (unsigned)sDListCount, (unsigned)current_origin,
+			(unsigned)Memory_VI_GetRegister(VI_WIDTH_REG), (unsigned)Memory_VI_GetRegister(VI_STATUS_REG),
+			(unsigned)gCPUState.CurrentPC);
 	static bool Old_FrameskipActive = false;
 	static bool Older_FrameskipActive = false;
 	
