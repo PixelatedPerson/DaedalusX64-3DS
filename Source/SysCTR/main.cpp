@@ -136,6 +136,20 @@ extern u32 sVICount;
 
 // Watchdog: logs where the emulated CPU is once per second, so a hang
 // shows up in log.txt as the same PC/Count repeating.
+
+// Switch files (nodynarec.txt, syncaudio.txt) are only honoured when their
+// first line starts with "on", so they can be turned off by editing the
+// file instead of deleting it.
+static bool CtrSwitchFileOn(const char *path)
+{
+	FILE *f = fopen(path, "r");
+	if (!f) return false;
+	char buf[8] = {0};
+	fread(buf, 1, sizeof(buf) - 1, f);
+	fclose(f);
+	return (buf[0] == 'o' || buf[0] == 'O') && (buf[1] == 'n' || buf[1] == 'N');
+}
+
 static volatile bool sWatchdogRun = false;
 static Thread sWatchdogThread = nullptr;
 
@@ -202,14 +216,12 @@ int main(int argc, char* argv[])
 		bool opened = System_Open(fullpath);
 		CtrLog("System_Open returned %d (dynarec=%d)", (int)opened, (int)gDynarecEnabled);
 		{
-			FILE *f = fopen(DAEDALUS_CTR_PATH("nodynarec.txt"), "r");
-			if (f) { fclose(f); gDynarecEnabled = false; CPU_SelectCore(); CtrLog("nodynarec.txt found: forcing interpreter"); }
+			if (CtrSwitchFileOn(DAEDALUS_CTR_PATH("nodynarec.txt"))) { gDynarecEnabled = false; CPU_SelectCore(); CtrLog("nodynarec.txt is on: forcing interpreter"); }
 		}
 		{
 			extern bool gCtrForceSyncAudio;
-			FILE *f = fopen(DAEDALUS_CTR_PATH("syncaudio.txt"), "r");
-			gCtrForceSyncAudio = (f != NULL);
-			if (f) { fclose(f); CtrLog("syncaudio.txt found: audio processed synchronously"); }
+			gCtrForceSyncAudio = CtrSwitchFileOn(DAEDALUS_CTR_PATH("syncaudio.txt"));
+			if (gCtrForceSyncAudio) CtrLog("syncaudio.txt is on: audio processed synchronously");
 		}
 		CtrLog("CPU_Run start (dynarec=%d)", (int)gDynarecEnabled);
 		WatchdogStart();
