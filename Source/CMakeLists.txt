@@ -115,7 +115,7 @@ set (CTR_HLEGRAPHICS_FILES SysCTR/HLEGraphics/GraphicsPluginCTR.cpp SysCTR/HLEGr
 set (CTR_HLEAUDIO_FILES SysCTR/HLEAudio/AudioPluginCTR.cpp SysCTR/HLEAudio/AudioOutput.cpp)
 set (CTR_INPUTMANAGER_FILES SysCTR/Input/InputManagerCTR.cpp)
 set (CTR_UI_FILES SysCTR/UI/UserInterface.cpp SysCTR/UI/RomSelector.cpp SysCTR/UI/InGameMenu.cpp)
-set (CTR_UTILITY_FILES SysCTR/Utility/ThreadCTR.cpp SysCTR/Utility/IOCTR.cpp SysCTR/Utility/TimingCTR.cpp SysCTR/Utility/MemoryCTR.c SysCTR/Utility/CacheCTR.S)
+set (CTR_UTILITY_FILES SysCTR/Utility/ThreadCTR.cpp SysCTR/Utility/IOCTR.cpp SysCTR/Utility/TimingCTR.cpp SysCTR/Utility/MemoryCTR.c SysCTR/Utility/LogCTR.c SysCTR/Utility/CacheCTR.S)
 set (CTR_BUILD ${CTR_DEBUG_FILES} ${CTR_DYNAREC_FILES} ${CTR_GRAPHICS_FILES} ${CTR_HLEAUDIO_FILES} ${CTR_HLEGRAPHICS_FILES} ${CTR_INPUTMANAGER_FILES} ${CTR_UI_FILES} ${CTR_UTILITY_FILES})
 
 if (PSP_RELEASE)
@@ -388,9 +388,17 @@ if (CTR_RELEASE)
 		DEPENDS ${PROJECT_NAME}.elf ${APP_RSF}
     )
 
-	add_custom_target( N3DS ALL
-		DEPENDS ${PROJECT_NAME}.3dsx
-				${PROJECT_NAME}.cia
-	)
+	find_program(MAKEROM makerom)
+	if (MAKEROM)
+		add_custom_target( N3DS ALL
+			DEPENDS ${PROJECT_NAME}.3dsx
+					${PROJECT_NAME}.cia
+		)
+	else()
+		message("makerom not found - building .3dsx only")
+		add_custom_target( N3DS ALL
+			DEPENDS ${PROJECT_NAME}.3dsx
+		)
+	endif()
 
 endif (CTR_RELEASE)

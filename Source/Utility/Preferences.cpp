@@ -40,6 +40,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef DAEDALUS_PSP
 #include "Utility/Translate.h"
+#ifdef DAEDALUS_CTR
+extern "C" int gCtrDynarecAvailable;
+#endif
 #endif
 
 // Audio is disabled on the PSP by default, but enabled on other platforms.
@@ -477,6 +480,9 @@ void SRomPreferences::Apply() const
 	gOSHooksEnabled             = PatchesEnabled;
 	gSpeedSyncEnabled           = SpeedSyncEnabled;
 	gDynarecEnabled             = g_ROM.settings.DynarecSupported && DynarecEnabled;
+#ifdef DAEDALUS_CTR
+	if (!gCtrDynarecAvailable) gDynarecEnabled = false;
+#endif
 	gDynarecLoopOptimisation	= DynarecLoopOptimisation;	// && g_ROM.settings.DynarecLoopOptimisation;
 	gDynarecDoublesOptimisation	= g_ROM.settings.DynarecDoublesOptimisation || DynarecDoublesOptimisation;
 	gDoubleDisplayEnabled       = g_ROM.settings.DoubleDisplayEnabled && DoubleDisplayEnabled; // I don't know why DD won't disabled if we set ||

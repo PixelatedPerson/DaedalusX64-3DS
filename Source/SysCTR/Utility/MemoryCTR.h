@@ -12,6 +12,7 @@ void _InvalidateInstructionCache(void);
 void _FlushDataCache(void);
 void _InvalidateAndFlushCaches(void);
 int  _InitializeSvcHack(void);
+extern int gCtrDynarecAvailable;
 
 #ifdef __cplusplus
 }

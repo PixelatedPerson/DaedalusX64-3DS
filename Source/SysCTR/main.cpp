@@ -35,6 +35,7 @@
 #include "Utility/Timer.h"
 #include "Utility/ROMFile.h"
 #include "Utility/MemoryCTR.h"
+#include "Utility/LogCTR.h"
 
 bool isN3DS = false;
 bool shouldQuit = false;
@@ -86,12 +87,17 @@ static void CheckDSPFirmware()
 static void Initialize()
 {
 	CheckDSPFirmware();
-	
-	_InitializeSvcHack();
+
+	CtrLogOpen();
+	CtrLog("DaedalusX64-3DS (fix/n3ds-freeze) starting");
+
+	int canExec = _InitializeSvcHack();
+	CtrLog("dynarec available: %s", canExec ? "yes" : "NO - using interpreter");
 
 	romfsInit();
 	
 	APT_CheckNew3DS(&isN3DS);
+	CtrLog("New 3DS: %s", isN3DS ? "yes" : "no");
 	osSetSpeedupEnable(true);
 	
 	gfxInit(GSP_BGR8_OES, GSP_BGR8_OES, true);
@@ -100,6 +106,7 @@ static void Initialize()
 		gfxSetWide(true);
 	
 	pglInitEx(0x080000, 0x040000);
+	CtrLog("picaGL init done");
 
 	strcpy(gDaedalusExePath, DAEDALUS_CTR_PATH(""));
 	strcpy(g_DaedalusConfig.mSaveDir, DAEDALUS_CTR_PATH("SaveGames/"));
@@ -108,6 +115,7 @@ static void Initialize()
 	UI::Initialize();
 
 	System_Init();
+	CtrLog("System_Init done, entering ROM selector");
 }
 
 
@@ -134,9 +142,14 @@ int main(int argc, char* argv[])
 		std::string rom = UI::DrawRomSelector();
 		sprintf(fullpath, "%s%s", DAEDALUS_CTR_PATH("Roms/"), rom.c_str());
 
-		System_Open(fullpath);
+		CtrLog("Opening ROM: %s", fullpath);
+		bool opened = System_Open(fullpath);
+		CtrLog("System_Open returned %d (dynarec=%d)", (int)opened, (int)gDynarecEnabled);
+		CtrLog("CPU_Run start");
 		CPU_Run();
+		CtrLog("CPU_Run returned, closing");
 		System_Close();
+		CtrLog("System_Close done");
 	}
 	
 	System_Finalize();

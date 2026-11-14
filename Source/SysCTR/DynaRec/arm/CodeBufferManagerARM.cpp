@@ -22,6 +22,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <malloc.h>
 
 #ifdef DAEDALUS_CTR
+#include "SysCTR/Utility/LogCTR.h"
+#include "Config/ConfigOptions.h"
 #include "SysCTR/Utility/MemoryCTR.h"
 #endif
 
@@ -87,7 +89,21 @@ bool	CCodeBufferManagerARM::Initialise()
 	if (mpBuffer == NULL || mpSecondBuffer == NULL)
 		return false;
 
-	_SetMemoryPermission((unsigned int*)mpBuffer, CODE_BUFFER_SIZE*2, 7);
+	{
+		int res = _SetMemoryPermission((unsigned int*)mpBuffer, CODE_BUFFER_SIZE*2, 7);
+		CtrLog("CodeBuffer %p size 0x%X -> RWX result 0x%08X", mpBuffer, CODE_BUFFER_SIZE*2, res);
+		if (res < 0)
+		{
+			// Can't execute generated code: fall back to the interpreter
+			// instead of jumping into non-executable memory.
+			gCtrDynarecAvailable = 0;
+			gDynarecEnabled = false;
+			free(mpBuffer);
+			mpBuffer = NULL;
+			mpSecondBuffer = NULL;
+			return false;
+		}
+	}
 	//_SetMemoryPermission((unsigned int*)mpSecondBuffer, CODE_BUFFER_SIZE, 7);
 	#endif
 
@@ -117,7 +133,7 @@ void	CCodeBufferManagerARM::Finalise()
 	if (mpBuffer != NULL && mpSecondBuffer != NULL)
 	{
 		#ifdef DAEDALUS_CTR
-		_SetMemoryPermission((unsigned int*)mpBuffer, CODE_BUFFER_SIZE*2 / 4096, 3);
+		_SetMemoryPermission((unsigned int*)mpBuffer, CODE_BUFFER_SIZE*2, 3); // was size/4096 (wrong units)
 		//_SetMemoryPermission((unsigned int*)mpSecondBuffer, CODE_BUFFER_SIZE / 4096, 3);
 		#endif
 		
