@@ -18,7 +18,10 @@ jobs:
 
       - name: Build picaGL
         run: |
-          git clone --depth 1 https://github.com/masterfeizz/picaGL /tmp/picaGL
+          # Daedalus-3DS was built against picaGL's "revamp" branch (pglInitEx);
+          # pin to the commit matching Daedalus' last update (Oct 2022).
+          git clone https://github.com/masterfeizz/picaGL /tmp/picaGL
+          git -C /tmp/picaGL checkout f149fed
           # 2022 code vs current libctru: use the new __3DS__ define, don't fail on warnings
           sed -i 's/-DARM11 -D_3DS/-D__3DS__/; s/-Werror//' /tmp/picaGL/Makefile
           make -C /tmp/picaGL -j$(nproc)
@@ -30,7 +33,6 @@ jobs:
           git clone --depth 1 https://github.com/masterfeizz/imgui-picaGL /tmp/imgui
           mkdir -p $DEVKITPRO/portlibs/3ds/include
           sed -i 's/^CFLAGS   = /CFLAGS   = -D__3DS__ /' /tmp/imgui/Makefile
-          sed -i 's/glLockArrays(/glLockArraysEXT(/; s/glUnlockArrays(/glUnlockArraysEXT(/' /tmp/imgui/imgui_impl_opengl2.cpp
           make -C /tmp/imgui -j$(nproc)
           make -C /tmp/imgui install
 
