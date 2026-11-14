@@ -19,6 +19,8 @@ jobs:
       - name: Build picaGL
         run: |
           git clone --depth 1 https://github.com/masterfeizz/picaGL /tmp/picaGL
+          # 2022 code vs current libctru: use the new __3DS__ define, don't fail on warnings
+          sed -i 's/-DARM11 -D_3DS/-D__3DS__/; s/-Werror//' /tmp/picaGL/Makefile
           make -C /tmp/picaGL -j$(nproc)
           mkdir -p $DEVKITPRO/picaGL
           cp -r /tmp/picaGL/lib /tmp/picaGL/include $DEVKITPRO/picaGL/
@@ -27,6 +29,7 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/masterfeizz/imgui-picaGL /tmp/imgui
           mkdir -p $DEVKITPRO/portlibs/3ds/include
+          sed -i 's/^CFLAGS   = /CFLAGS   = -D__3DS__ /' /tmp/imgui/Makefile
           make -C /tmp/imgui -j$(nproc)
           make -C /tmp/imgui install
 
