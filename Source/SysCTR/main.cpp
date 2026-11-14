@@ -152,6 +152,13 @@ static void WatchdogFunc(void *)
 			(unsigned)gCPUState.CPUControl[C0_COUNT]._u32,
 			(unsigned)gCPUState.Delay, (unsigned)gCPUState.StuffToDo,
 			(unsigned)sVICount, (unsigned)sDListCount, (int)gDynarecEnabled);
+		CtrLog("   IRQ: MI_INTR=0x%02x MASK=0x%02x SR=0x%08x CAUSE=0x%08x COMPARE=0x%08x | SP=0x%04x DPC=0x%04x AI=0x%08x PI=0x%x SI=0x%x",
+			(unsigned)Memory_MI_GetRegister(MI_INTR_REG), (unsigned)Memory_MI_GetRegister(MI_INTR_MASK_REG),
+			(unsigned)gCPUState.CPUControl[C0_SR]._u32, (unsigned)gCPUState.CPUControl[C0_CAUSE]._u32,
+			(unsigned)gCPUState.CPUControl[C0_COMPARE]._u32,
+			(unsigned)Memory_SP_GetRegister(SP_STATUS_REG), (unsigned)Memory_DPC_GetRegister(DPC_STATUS_REG),
+			(unsigned)Memory_AI_GetRegister(AI_STATUS_REG), (unsigned)Memory_PI_GetRegister(PI_STATUS_REG),
+			(unsigned)Memory_SI_GetRegister(SI_STATUS_REG));
 	}
 }
 
