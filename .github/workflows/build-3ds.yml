@@ -39,6 +39,15 @@ jobs:
           make -C /tmp/imgui -j$(nproc)
           make -C /tmp/imgui install
 
+      - name: Build makerom (for the installable .cia)
+        run: |
+          apt-get install -y --no-install-recommends build-essential
+          git clone --depth 1 https://github.com/3DSGuy/Project_CTR /tmp/ctr
+          make -C /tmp/ctr/makerom deps -j$(nproc)
+          make -C /tmp/ctr/makerom -j$(nproc)
+          find /tmp/ctr/makerom -type f -name makerom -perm -u+x -exec cp {} /usr/local/bin/makerom \;
+          makerom -version || true
+
       - name: Build DaedalusX64 (3DS)
         run: |
           mkdir -p daedbuild && cd daedbuild
@@ -48,14 +57,16 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: DaedalusX64-3ds
-          path: daedbuild/*.3dsx
+          path: |
+            daedbuild/*.3dsx
+            daedbuild/*.cia
 
       - name: Publish build to "builds" branch
         if: github.event_name == 'push'
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          mkdir -p /tmp/out && cp daedbuild/DaedalusX64.3dsx /tmp/out/
+          mkdir -p /tmp/out && cp daedbuild/DaedalusX64.3dsx daedbuild/DaedalusX64.cia /tmp/out/
           cd /tmp/out && git init -q -b builds
           git config user.name "github-actions" && git config user.email "actions@github.com"
-          git add DaedalusX64.3dsx && git commit -qm "Build of ${GITHUB_SHA}"
+          git add DaedalusX64.3dsx DaedalusX64.cia && git commit -qm "Build of ${GITHUB_SHA}"
           git push -f "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}" builds
