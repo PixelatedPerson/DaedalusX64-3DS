@@ -165,7 +165,23 @@ static EProcessResult RSP_HLE_Graphics()
 
 	if (gGraphicsEnabled && gGraphicsPlugin != nullptr)
 	{
+		extern u32 gRDPJobsFinished;
+		u32 before = gRDPJobsFinished;
 		gGraphicsPlugin->ProcessDList();
+		if (gRDPJobsFinished == before)
+		{
+			// The display list ended without a FullSync, so the DP interrupt
+			// was never raised. Real hardware (and other HLE emulators) still
+			// signal "RDP done" when the graphics task ends; games like
+			// Perfect Dark wait for it and hang otherwise.
+#ifdef DAEDALUS_CTR
+			static u32 sMissing = 0;
+			if (++sMissing <= 10 || (sMissing % 300) == 0)
+				CtrLog("Gfx task ended without FullSync (#%u) - raising DP interrupt", (unsigned)sMissing);
+#endif
+			Memory_MI_SetRegisterBits(MI_INTR_REG, MI_INTR_DP);
+			R4300_Interrupt_UpdateCause3();
+		}
 	}
 	else
 	{

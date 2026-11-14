@@ -213,8 +213,10 @@ static inline bool IsVertexInfoValid(u32 address, u32 size, u32 v0, u32 n)
 //*****************************************************************************
 //
 //*****************************************************************************
+u32 gRDPJobsFinished = 0;
 inline void FinishRDPJob()
 {
+	gRDPJobsFinished++;
 	Memory_MI_SetRegisterBits(MI_INTR_REG, MI_INTR_DP);
 	gCPUState.AddJob(CPU_CHECK_INTERRUPTS);
 }
