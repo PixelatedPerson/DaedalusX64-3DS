@@ -30,6 +30,7 @@ jobs:
           git clone --depth 1 https://github.com/masterfeizz/imgui-picaGL /tmp/imgui
           mkdir -p $DEVKITPRO/portlibs/3ds/include
           sed -i 's/^CFLAGS   = /CFLAGS   = -D__3DS__ /' /tmp/imgui/Makefile
+          sed -i 's/glLockArrays(/glLockArraysEXT(/; s/glUnlockArrays(/glUnlockArraysEXT(/' /tmp/imgui/imgui_impl_opengl2.cpp
           make -C /tmp/imgui -j$(nproc)
           make -C /tmp/imgui install
 
